@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Absensi Mandiri</title>
-<link rel="stylesheet" href="leaflet/leaflet.css">
+<title>Absensi Kunjungan</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -43,7 +43,9 @@
   }
   .config-warn code{background:rgba(0,0,0,.25); padding:1px 5px; border-radius:4px;}
 
-  .stepper{display:flex; align-items:center; max-width:340px; width:100%; margin-bottom:22px;}
+  /* Stepper 5 dots */
+  .stepper{display:flex; align-items:flex-start; max-width:380px; width:100%; margin-bottom:22px;}
+  .step-col{display:flex; flex-direction:column; align-items:center; gap:5px;}
   .step-dot{
     width:28px; height:28px; border-radius:50%; background:var(--surface2); border:1px solid var(--border);
     display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--muted);
@@ -51,9 +53,9 @@
   }
   .step-dot.active{ background:var(--accent2); border-color:var(--accent2); color:#06231b; }
   .step-dot.done{ background:rgba(56,217,169,.18); border-color:var(--accent2); color:var(--accent2); }
-  .step-line{flex:1; height:2px; background:var(--border); margin:0 4px;}
+  .step-label{font-size:9.5px; color:var(--muted); text-align:center; max-width:56px; line-height:1.3;}
+  .step-line{flex:1; height:2px; background:var(--border); margin:0 3px; margin-top:13px;}
   .step-line.done{background:var(--accent2);}
-  .step-label{font-size:10px; color:var(--muted); text-align:center; margin-top:6px; max-width:60px;}
 
   .card{
     width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border);
@@ -96,6 +98,35 @@
   .btn-secondary:hover{border-color:var(--muted);}
   .btn:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
 
+  /* Pelanggan search */
+  .search-wrap{position:relative; margin-bottom:10px;}
+  .search-input{
+    width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text);
+    padding:11px 14px 11px 38px; border-radius:10px; font-size:14px; font-family:inherit; outline:none;
+    transition:border-color .2s;
+  }
+  .search-input:focus{border-color:var(--accent2);}
+  .search-icon{position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:16px; pointer-events:none;}
+  .pelanggan-list{
+    max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-bottom:8px;
+  }
+  .pelanggan-list::-webkit-scrollbar{width:4px;}
+  .pelanggan-list::-webkit-scrollbar-track{background:transparent;}
+  .pelanggan-list::-webkit-scrollbar-thumb{background:var(--border); border-radius:2px;}
+  .pel-item{
+    display:flex; align-items:center; gap:12px;
+    background:var(--surface2); border:1.5px solid var(--border);
+    border-radius:12px; padding:12px 14px; cursor:pointer; transition:all .2s;
+    text-align:left;
+  }
+  .pel-item:hover{border-color:var(--muted);}
+  .pel-item.selected{border-color:var(--accent2); background:rgba(56,217,169,.08);}
+  .pel-ic{font-size:22px; flex-shrink:0;}
+  .pel-name{font-size:14px; font-weight:700;}
+  .pel-addr{font-size:11.5px; color:var(--muted); margin-top:2px;}
+  .pel-empty{font-size:13px; color:var(--muted); text-align:center; padding:18px 0;}
+
+  /* Tipe check-in/out */
   .tipe-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:8px;}
   .tipe-btn{
     background:var(--surface2); border:1.5px solid var(--border); border-radius:14px; padding:20px 10px;
@@ -103,10 +134,28 @@
   }
   .tipe-btn .ic{font-size:26px;}
   .tipe-btn .lbl{font-size:13.5px; font-weight:700;}
-  .tipe-btn.selected{border-color:var(--accent2); background:rgba(56,217,169,.1);}
+  .tipe-btn.selected-masuk{border-color:var(--accent2); background:rgba(56,217,169,.1);}
+  .tipe-btn.selected-keluar{border-color:var(--danger); background:rgba(247,80,79,.08);}
   .tipe-btn:disabled{opacity:.35; cursor:not-allowed;}
   .tipe-hint{font-size:11.5px; color:var(--muted); text-align:center; min-height:16px; margin:10px 0 18px;}
 
+  /* Ringkasan pelanggan terpilih di step tipe */
+  .pel-selected-card{
+    background:rgba(79,142,247,.08); border:1px solid rgba(79,142,247,.3);
+    border-radius:12px; padding:12px 14px; margin-bottom:18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .pel-selected-card .ps-ic{font-size:20px;}
+  .pel-selected-card .ps-name{font-size:14px; font-weight:700;}
+  .pel-selected-card .ps-sub{font-size:11.5px; color:var(--muted); margin-top:2px;}
+
+  /* Last visit badge */
+  .last-visit{
+    font-size:12px; background:rgba(247,199,79,.1); border:1px solid rgba(247,199,79,.25);
+    color:var(--gold); border-radius:8px; padding:8px 11px; margin-bottom:18px; line-height:1.5;
+  }
+
+  /* Kamera */
   .cam-wrap{
     position:relative; width:100%; aspect-ratio:3/4; background:#000; border-radius:16px; overflow:hidden;
     margin-bottom:16px; border:1px solid var(--border);
@@ -117,23 +166,30 @@
   }
   .cam-guide .ring{width:62%; aspect-ratio:1/1; border-radius:50%; border:2.5px dashed rgba(255,255,255,.55);}
   .cam-err{font-size:12.5px; color:var(--danger); background:rgba(247,80,79,.1); border:1px solid rgba(247,80,79,.3); padding:10px 12px; border-radius:10px; margin-bottom:14px; display:none; line-height:1.5;}
-
   .photo-preview{width:100%; border-radius:16px; margin-bottom:18px; display:block; border:1px solid var(--border);}
 
+  /* Lokasi */
   #map{width:100%; height:210px; border-radius:14px; margin-bottom:14px; display:none; background:var(--surface2);}
   .loc-status{font-size:13px; color:var(--muted); margin-bottom:14px; display:flex; align-items:center; gap:8px;}
   .spinner{width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--accent2); border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0;}
   @keyframes spin{to{transform:rotate(360deg)}}
-
   .radius-badge{font-size:12.5px; font-weight:700; padding:8px 12px; border-radius:10px; margin-bottom:16px; text-align:center;}
   .radius-badge.ok{background:rgba(56,217,169,.12); color:var(--accent2); border:1px solid rgba(56,217,169,.3);}
   .radius-badge.bad{background:rgba(247,80,79,.12); color:var(--danger); border:1px solid rgba(247,80,79,.3);}
   .radius-badge.warn{background:rgba(247,199,79,.12); color:var(--gold); border:1px solid rgba(247,199,79,.3);}
 
+  /* Hasil */
   .result-wrap{text-align:center; padding:10px 0 4px;}
   .result-icon{font-size:52px; margin-bottom:14px; line-height:1;}
   .result-msg{font-size:14.5px; line-height:1.6; margin-bottom:22px; color:var(--text);}
   .result-thumb{width:110px; height:110px; border-radius:50%; object-fit:cover; border:3px solid var(--accent2); margin-bottom:18px;}
+  .result-detail{
+    background:var(--surface2); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; margin-bottom:20px; text-align:left; font-size:13px; line-height:2;
+  }
+  .result-detail .rd-row{display:flex; justify-content:space-between; gap:12px;}
+  .result-detail .rd-key{color:var(--muted);}
+  .result-detail .rd-val{font-weight:700; text-align:right; flex:1;}
 
   .foot{text-align:center; font-size:11.5px; color:var(--muted); padding:18px;}
 
@@ -144,29 +200,46 @@
 
 <div class="page">
   <div class="topbar">
-    <div class="brand"><span class="dot"></span> Absensi Mandiri</div>
+    <div class="brand"><span class="dot"></span> Absensi Kunjungan</div>
     <div class="clock mono" id="liveClock">--:--:--</div>
   </div>
 
   <div class="wrap">
     <div class="config-warn" id="configWarn">
-      ⚠️ <strong>Belum dikonfigurasi.</strong> Buka file ini, cari baris <code>const API_URL</code> di bagian
-      &lt;script&gt; paling bawah, lalu ganti dengan URL Web App Apps Script kamu (akhiran <code>/exec</code>).
+      ⚠️ <strong>Belum dikonfigurasi.</strong> Cari baris <code>const API_URL</code> di bagian &lt;script&gt;, lalu ganti dengan URL Web App Apps Script (akhiran <code>/exec</code>).
     </div>
 
+    <!-- Stepper 5 langkah -->
     <div class="stepper" id="stepper">
-      <div class="step-dot active" data-dot="1"><span>1</span></div>
+      <div class="step-col">
+        <div class="step-dot active" data-dot="1"><span>1</span></div>
+        <div class="step-label">Identitas</div>
+      </div>
       <div class="step-line" data-line="1"></div>
-      <div class="step-dot" data-dot="2"><span>2</span></div>
+      <div class="step-col">
+        <div class="step-dot" data-dot="2"><span>2</span></div>
+        <div class="step-label">Pelanggan</div>
+      </div>
       <div class="step-line" data-line="2"></div>
-      <div class="step-dot" data-dot="3"><span>3</span></div>
+      <div class="step-col">
+        <div class="step-dot" data-dot="3"><span>3</span></div>
+        <div class="step-label">Check-in/out</div>
+      </div>
       <div class="step-line" data-line="3"></div>
-      <div class="step-dot" data-dot="4"><span>4</span></div>
+      <div class="step-col">
+        <div class="step-dot" data-dot="4"><span>4</span></div>
+        <div class="step-label">Selfie</div>
+      </div>
+      <div class="step-line" data-line="4"></div>
+      <div class="step-col">
+        <div class="step-dot" data-dot="5"><span>5</span></div>
+        <div class="step-label">Lokasi</div>
+      </div>
     </div>
 
     <div class="card">
 
-      <!-- STEP 1: Identitas -->
+      <!-- ══ STEP 1: Identitas ══ -->
       <section class="step active" id="step1">
         <h1 class="step-title">Siapa kamu?</h1>
         <p class="step-sub">Pilih nama dan masukkan PIN absen kamu.</p>
@@ -188,45 +261,71 @@
         <button class="btn btn-primary" id="btnStep1Next" disabled>Lanjut →</button>
       </section>
 
-      <!-- STEP 2: Jenis Absen -->
+      <!-- ══ STEP 2: Pilih Pelanggan ══ -->
       <section class="step" id="step2">
-        <h1 class="step-title">Absen apa hari ini?</h1>
-        <p class="step-sub" id="step2Sub">Pilih jenis absensi yang ingin dicatat.</p>
+        <h1 class="step-title">Kunjungi siapa?</h1>
+        <p class="step-sub">Pilih pelanggan yang akan / sedang kamu kunjungi.</p>
 
-        <div class="tipe-grid">
-          <button class="tipe-btn" id="btnTipeMasuk" data-tipe="Masuk">
-            <span class="ic">🟢</span><span class="lbl">Masuk</span>
-          </button>
-          <button class="tipe-btn" id="btnTipeKeluar" data-tipe="Keluar">
-            <span class="ic">🔴</span><span class="lbl">Keluar</span>
-          </button>
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="pelSearch" placeholder="Cari nama pelanggan…" autocomplete="off">
         </div>
-        <p class="tipe-hint" id="tipeHint"></p>
+        <div class="pelanggan-list" id="pelangganList">
+          <div class="pel-empty">Memuat daftar pelanggan…</div>
+        </div>
 
         <button class="btn btn-primary" id="btnStep2Next" disabled>Lanjut →</button>
         <button class="btn btn-secondary" onclick="goStep(1)">← Kembali</button>
       </section>
 
-      <!-- STEP 3: Kamera -->
+      <!-- ══ STEP 3: Tipe Check-in / Check-out ══ -->
       <section class="step" id="step3">
+        <h1 class="step-title">Absen apa?</h1>
+        <p class="step-sub">Pilih apakah kamu baru <strong>tiba</strong> di pelanggan atau sudah <strong>selesai</strong>.</p>
+
+        <div class="pel-selected-card" id="pelSelectedCard">
+          <span class="ps-ic">🏢</span>
+          <div>
+            <div class="ps-name" id="pelSelectedName">—</div>
+            <div class="ps-sub" id="pelSelectedAddr">—</div>
+          </div>
+        </div>
+
+        <div class="last-visit" id="lastVisit" style="display:none"></div>
+
+        <div class="tipe-grid">
+          <button class="tipe-btn" id="btnTipeMasuk" data-tipe="Check-in">
+            <span class="ic">🟢</span><span class="lbl">Check-in</span>
+          </button>
+          <button class="tipe-btn" id="btnTipeKeluar" data-tipe="Check-out">
+            <span class="ic">🔴</span><span class="lbl">Check-out</span>
+          </button>
+        </div>
+        <p class="tipe-hint" id="tipeHint"></p>
+
+        <button class="btn btn-primary" id="btnStep3Next" disabled>Lanjut →</button>
+        <button class="btn btn-secondary" onclick="goStep(2)">← Kembali</button>
+      </section>
+
+      <!-- ══ STEP 4: Kamera selfie ══ -->
+      <section class="step" id="step4">
         <h1 class="step-title">Ambil foto selfie</h1>
         <p class="step-sub">Posisikan wajah di dalam lingkaran, lalu tekan tombol ambil foto.</p>
 
         <div class="cam-err" id="camErr"></div>
-
         <div class="cam-wrap">
           <video id="camVideo" autoplay playsinline muted></video>
           <div class="cam-guide"><div class="ring"></div></div>
         </div>
 
         <button class="btn btn-primary" id="btnCapture">📸 Ambil Foto</button>
-        <button class="btn btn-secondary" onclick="goStep(2)">← Kembali</button>
+        <button class="btn btn-secondary" onclick="goStep(3)">← Kembali</button>
       </section>
 
-      <!-- STEP 3b: Konfirmasi Foto -->
-      <section class="step" id="step3b">
+      <!-- ══ STEP 4b: Konfirmasi foto ══ -->
+      <section class="step" id="step4b">
         <h1 class="step-title">Foto sudah pas?</h1>
-        <p class="step-sub">Periksa lagi sebelum melanjutkan.</p>
+        <p class="step-sub">Periksa sebelum melanjutkan.</p>
 
         <img class="photo-preview" id="previewImg" alt="Preview foto selfie">
 
@@ -234,63 +333,62 @@
         <button class="btn btn-secondary" id="btnRetake">↺ Ambil Ulang</button>
       </section>
 
-      <!-- STEP 4: Lokasi -->
-      <section class="step" id="step4">
-        <h1 class="step-title">Cek lokasi kamu</h1>
-        <p class="step-sub">Lokasi GPS dicatat sebagai bukti absen.</p>
+      <!-- ══ STEP 5: Lokasi ══ -->
+      <section class="step" id="step5">
+        <h1 class="step-title">Konfirmasi lokasi</h1>
+        <p class="step-sub">Lokasi GPS dicatat sebagai bukti kunjungan.</p>
 
         <div class="loc-status" id="locStatus"><div class="spinner"></div> Mencari lokasi…</div>
         <div id="map"></div>
         <div class="radius-badge" id="radiusBadge" style="display:none"></div>
 
         <button class="btn btn-primary" id="btnSubmitAbsen" disabled>Kirim Absen Sekarang</button>
-        <button class="btn btn-secondary" onclick="goStep(3)">← Kembali</button>
+        <button class="btn btn-secondary" onclick="goStep(4)">← Kembali</button>
       </section>
 
-      <!-- STEP 5: Hasil -->
-      <section class="step" id="step5">
+      <!-- ══ STEP 6: Hasil ══ -->
+      <section class="step" id="step6">
         <div class="result-wrap" id="resultWrap"></div>
       </section>
 
     </div>
   </div>
 
-  <div class="foot">Absensi Mandiri · Selfie & Lokasi GPS</div>
+  <div class="foot">Absensi Kunjungan Pelanggan · Selfie & GPS</div>
 </div>
 
 <canvas id="captureCanvas" style="display:none"></canvas>
 
-<script src="leaflet/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
 //  KONFIGURASI — ganti dengan URL Web App Apps Script kamu
 //  Cara dapat URL: Apps Script editor → Deploy → Manage deployments
 //  → copy URL yang berakhiran /exec
-// ════════════════════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbzNSI1WEZcBC6BfazEwwV56mqmwa_V7tldlaCjXxdGg2WDqZYYt93ISlUO51zTGkeTTcA/exec';
+// ════════════════════════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycbxibHdlDc8GDOV6LrnTwXpS60u6LnRd_900gP1u7bbUTALYHTrGSc-hAmY9Jxw8-dANJg/exec';
 
-// ── State global ──────────────────────────────────────────
+// ── State global ────────────────────────────────────────────────
 const state = {
   nama: '', pin: '', tipe: '',
+  pelanggan: null,          // { id, nama, alamat }
   fotoBase64: '', lat: null, lng: null, akurasi: null,
-  lokasiList: []
+  pelangganList: [],        // daftar pelanggan dari server
 };
 let videoStream = null;
 let leafletMap = null, userMarker = null, geofenceCircles = [];
 
-// Fix path ikon marker Leaflet — file PNG ada langsung di folder leaflet/
-// (bukan di leaflet/images/ seperti default yang dicari Leaflet), makanya
-// perlu di-set manual di sini supaya tidak 404.
+// Fix Leaflet marker icons
 if (typeof L !== 'undefined'){
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'leaflet/marker-icon-2x.png',
-    iconUrl: 'leaflet/marker-icon.png',
-    shadowUrl: 'leaflet/marker-shadow.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   });
 }
 
-// ── Util ──────────────────────────────────────────────────
+// ── Util ────────────────────────────────────────────────────────
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -310,27 +408,29 @@ async function postAction(action, payload={}){
   return res.json();
 }
 
-// ── Jam real-time ─────────────────────────────────────────
+// ── Jam real-time ────────────────────────────────────────────────
 function tickClock(){
   const now = new Date();
-  document.getElementById('liveClock').textContent = now.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('liveClock').textContent =
+    now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 setInterval(tickClock, 1000); tickClock();
 
-// ── Step navigation ───────────────────────────────────────
-const stepOrder = ['step1','step2','step3','step3b','step4','step5'];
-const dotForStep = {step1:1, step2:2, step3:3, step3b:3, step4:4, step5:4};
+// ── Step navigation ──────────────────────────────────────────────
+// step1, step2, step3, step4, step4b, step5, step6
+const stepOrder = ['step1','step2','step3','step4','step4b','step5','step6'];
+// dot nomor yang mewakili tiap step id
+const dotForStep = { step1:1, step2:2, step3:3, step4:4, step4b:4, step5:5, step6:5 };
 
-function goStep(stepNum){
-  // dipanggil dgn nomor (1..4) dari tombol "Kembali"
-  const map = {1:'step1', 2:'step2', 3:'step3', 4:'step4'};
-  showStep(map[stepNum]);
+function goStep(n){
+  const map = {1:'step1',2:'step2',3:'step3',4:'step4',5:'step5'};
+  showStep(map[n]);
 }
 function showStep(id){
-  stepOrder.forEach(s => document.getElementById(s).classList.toggle('active', s === id));
+  stepOrder.forEach(s => document.getElementById(s).classList.toggle('active', s===id));
   updateStepper(id);
-  if (id === 'step3') startCamera(); else stopCamera();
-  if (id === 'step4') getLocation();
+  if (id==='step4') startCamera(); else stopCamera();
+  if (id==='step5') getLocation();
 }
 function updateStepper(id){
   const current = dotForStep[id] || 1;
@@ -346,7 +446,7 @@ function updateStepper(id){
   });
 }
 
-// ── STEP 1: load nama sales + PIN boxes ─────────────────────
+// ── STEP 1: Identitas ────────────────────────────────────────────
 async function initPage(){
   if (API_URL.indexOf('GANTI_DENGAN') !== -1){
     document.getElementById('configWarn').style.display = 'block';
@@ -354,12 +454,21 @@ async function initPage(){
   try {
     const data = await postAction('initAbsen');
     if (!data.ok) throw new Error(data.msg || 'Gagal memuat data.');
-    state.lokasiList = data.lokasi || [];
+
+    // Daftar sales
     const sel = document.getElementById('selNama');
     sel.innerHTML = '<option value="">— Pilih Nama —</option>' +
       (data.sales||[]).map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+
+    // Daftar pelanggan — disimpan di state
+    // Format yang diharapkan dari GAS:
+    // data.pelanggan = [ { id, nama, alamat }, ... ]
+    // Fallback: jika GAS belum update, list kosong & user bisa cari manual
+    state.pelangganList = data.pelanggan || [];
+    renderPelangganList('');
   } catch(err){
     document.getElementById('selNama').innerHTML = '<option value="">Gagal memuat (cek koneksi/API_URL)</option>';
+    renderPelangganList('');
   }
 }
 
@@ -367,59 +476,126 @@ const pinBoxes = Array.from(document.querySelectorAll('.pin-box'));
 pinBoxes.forEach((box, idx) => {
   box.addEventListener('input', () => {
     box.value = box.value.replace(/[^0-9]/g, '');
-    if (box.value && idx < pinBoxes.length - 1) pinBoxes[idx+1].focus();
+    if (box.value && idx < pinBoxes.length-1) pinBoxes[idx+1].focus();
     refreshStep1();
   });
   box.addEventListener('keydown', (e) => {
-    if (e.key === 'Backspace' && !box.value && idx > 0) pinBoxes[idx-1].focus();
+    if (e.key==='Backspace' && !box.value && idx>0) pinBoxes[idx-1].focus();
   });
 });
 document.getElementById('selNama').addEventListener('change', refreshStep1);
-
 function refreshStep1(){
   state.nama = document.getElementById('selNama').value;
   state.pin  = pinBoxes.map(b => b.value).join('');
-  document.getElementById('btnStep1Next').disabled = !(state.nama && state.pin.length === 4);
+  document.getElementById('btnStep1Next').disabled = !(state.nama && state.pin.length===4);
 }
 
-document.getElementById('btnStep1Next').addEventListener('click', async () => {
+document.getElementById('btnStep1Next').addEventListener('click', () => {
   showStep('step2');
-  document.getElementById('step2Sub').textContent = 'Memeriksa status absen hari ini…';
-  document.getElementById('tipeHint').textContent = '';
-  try {
-    const status = await postAction('cekStatusHariIni', { nama: state.nama });
-    let hint = '';
-    if (status.ok && status.sudahMasuk) hint += `Sudah Masuk pukul ${status.jamMasuk}. `;
-    if (status.ok && status.sudahKeluar) hint += `Sudah Keluar pukul ${status.jamKeluar}.`;
-    document.getElementById('tipeHint').textContent = hint;
-    document.getElementById('step2Sub').textContent = 'Pilih jenis absensi yang ingin dicatat.';
-  } catch(err){
-    document.getElementById('step2Sub').textContent = 'Pilih jenis absensi yang ingin dicatat.';
-  }
 });
 
-// ── STEP 2: pilih tipe ───────────────────────────────────────
-['btnTipeMasuk','btnTipeKeluar'].forEach(id => {
-  document.getElementById(id).addEventListener('click', () => {
-    state.tipe = document.getElementById(id).dataset.tipe;
-    document.getElementById('btnTipeMasuk').classList.toggle('selected', id==='btnTipeMasuk');
-    document.getElementById('btnTipeKeluar').classList.toggle('selected', id==='btnTipeKeluar');
-    document.getElementById('btnStep2Next').disabled = false;
+// ── STEP 2: Pilih Pelanggan ──────────────────────────────────────
+function renderPelangganList(query){
+  const list = document.getElementById('pelangganList');
+  const q = query.trim().toLowerCase();
+  let items = state.pelangganList;
+  if (q) items = items.filter(p => p.nama.toLowerCase().includes(q) || (p.alamat||'').toLowerCase().includes(q));
+
+  if (items.length === 0){
+    list.innerHTML = `<div class="pel-empty">${state.pelangganList.length === 0 ? 'Daftar pelanggan belum tersedia.' : 'Tidak ada hasil untuk "'+escapeHtml(query)+'".'}</div>`;
+    return;
+  }
+  list.innerHTML = items.map(p => `
+    <button class="pel-item ${state.pelanggan && state.pelanggan.id===p.id ? 'selected':''}"
+      data-id="${escapeHtml(String(p.id))}" onclick="pilihPelanggan(this, '${escapeHtml(String(p.id))}')">
+      <span class="pel-ic">🏢</span>
+      <div>
+        <div class="pel-name">${escapeHtml(p.nama)}</div>
+        ${p.alamat ? `<div class="pel-addr">${escapeHtml(p.alamat)}</div>` : ''}
+      </div>
+    </button>
+  `).join('');
+}
+
+document.getElementById('pelSearch').addEventListener('input', (e) => {
+  renderPelangganList(e.target.value);
+});
+
+function pilihPelanggan(el, id){
+  const found = state.pelangganList.find(p => String(p.id)===id);
+  if (!found) return;
+  state.pelanggan = found;
+  document.querySelectorAll('.pel-item').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('btnStep2Next').disabled = false;
+}
+
+document.getElementById('btnStep2Next').addEventListener('click', async () => {
+  // Update ringkasan pelanggan di step 3
+  document.getElementById('pelSelectedName').textContent = state.pelanggan.nama;
+  document.getElementById('pelSelectedAddr').textContent = state.pelanggan.alamat || '—';
+
+  // Cek status kunjungan hari ini untuk pelanggan ini
+  document.getElementById('lastVisit').style.display = 'none';
+  document.getElementById('tipeHint').textContent = '';
+  document.getElementById('btnTipeMasuk').disabled = false;
+  document.getElementById('btnTipeKeluar').disabled = false;
+  state.tipe = '';
+  document.getElementById('btnTipeMasuk').classList.remove('selected-masuk');
+  document.getElementById('btnTipeKeluar').classList.remove('selected-keluar');
+  document.getElementById('btnStep3Next').disabled = true;
+  showStep('step3');
+
+  try {
+    const status = await postAction('cekStatusKunjungan', {
+      nama: state.nama, pelangganId: state.pelanggan.id
+    });
+    if (status.ok){
+      const lv = document.getElementById('lastVisit');
+      let msg = '';
+      if (status.sudahCheckIn && !status.sudahCheckOut){
+        msg = `✅ Sudah Check-in pukul ${status.jamCheckIn}. Belum Check-out.`;
+        document.getElementById('btnTipeMasuk').disabled = true;
+      } else if (status.sudahCheckIn && status.sudahCheckOut){
+        msg = `✅ Check-in ${status.jamCheckIn} · Check-out ${status.jamCheckOut}`;
+      } else {
+        msg = 'Belum ada kunjungan hari ini ke pelanggan ini.';
+      }
+      lv.textContent = msg;
+      lv.style.display = 'block';
+    }
+  } catch(e){ /* gagal cek status, tidak masalah */ }
+});
+
+// ── STEP 3: Tipe Check-in / Check-out ───────────────────────────
+['btnTipeMasuk','btnTipeKeluar'].forEach(btnId => {
+  document.getElementById(btnId).addEventListener('click', () => {
+    state.tipe = document.getElementById(btnId).dataset.tipe;
+    document.getElementById('btnTipeMasuk').classList.remove('selected-masuk');
+    document.getElementById('btnTipeKeluar').classList.remove('selected-keluar');
+    if (state.tipe === 'Check-in'){
+      document.getElementById('btnTipeMasuk').classList.add('selected-masuk');
+      document.getElementById('tipeHint').textContent = '📍 Kamu baru tiba di lokasi pelanggan.';
+    } else {
+      document.getElementById('btnTipeKeluar').classList.add('selected-keluar');
+      document.getElementById('tipeHint').textContent = '🚗 Kamu sudah selesai di lokasi pelanggan.';
+    }
+    document.getElementById('btnStep3Next').disabled = false;
   });
 });
-document.getElementById('btnStep2Next').addEventListener('click', () => showStep('step3'));
+document.getElementById('btnStep3Next').addEventListener('click', () => showStep('step4'));
 
-// ── STEP 3: kamera ───────────────────────────────────────────
+// ── STEP 4: Kamera ───────────────────────────────────────────────
 async function startCamera(){
   const errBox = document.getElementById('camErr');
   errBox.style.display = 'none';
   try {
-    videoStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:720} }, audio:false });
+    videoStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:720}},audio:false});
     const video = document.getElementById('camVideo');
     video.srcObject = videoStream;
     await video.play();
   } catch(err){
-    errBox.textContent = '❌ Tidak bisa mengakses kamera: ' + err.message + '. Pastikan izin kamera sudah diaktifkan di browser.';
+    errBox.textContent = '❌ Tidak bisa mengakses kamera: '+err.message+'. Pastikan izin kamera sudah diaktifkan di browser.';
     errBox.style.display = 'block';
   }
 }
@@ -428,43 +604,42 @@ function stopCamera(){
 }
 document.getElementById('btnCapture').addEventListener('click', () => {
   const video = document.getElementById('camVideo');
-  if (!video.videoWidth){ return; }
+  if (!video.videoWidth) return;
   const canvas = document.getElementById('captureCanvas');
   const maxW = 720;
   const scale = Math.min(1, maxW / video.videoWidth);
   canvas.width = video.videoWidth * scale;
   canvas.height = video.videoHeight * scale;
-  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-  state.fotoBase64 = canvas.toDataURL('image/jpeg', 0.75);
+  canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+  state.fotoBase64 = canvas.toDataURL('image/jpeg',0.75);
   document.getElementById('previewImg').src = state.fotoBase64;
-  showStep('step3b');
+  showStep('step4b');
 });
+document.getElementById('btnPhotoNext').addEventListener('click', () => showStep('step5'));
+document.getElementById('btnRetake').addEventListener('click', () => showStep('step4'));
 
-// ── STEP 3b: konfirmasi foto ──────────────────────────────────
-document.getElementById('btnPhotoNext').addEventListener('click', () => showStep('step4'));
-document.getElementById('btnRetake').addEventListener('click', () => showStep('step3'));
-
-// ── STEP 4: lokasi + peta Leaflet ──────────────────────────────
+// ── STEP 5: Lokasi ───────────────────────────────────────────────
 function getLocation(){
   document.getElementById('btnSubmitAbsen').disabled = true;
-  document.getElementById('locStatus').style.display = 'flex';
-  document.getElementById('locStatus').innerHTML = '<div class="spinner"></div> Mencari lokasi…';
+  const locEl = document.getElementById('locStatus');
+  locEl.style.display = 'flex';
+  locEl.innerHTML = '<div class="spinner"></div> Mencari lokasi…';
   document.getElementById('radiusBadge').style.display = 'none';
 
   if (!navigator.geolocation){
-    document.getElementById('locStatus').innerHTML = '❌ Perangkat tidak mendukung GPS.';
+    locEl.innerHTML = '❌ Perangkat tidak mendukung GPS.';
     return;
   }
   navigator.geolocation.getCurrentPosition(pos => {
     state.lat = pos.coords.latitude;
     state.lng = pos.coords.longitude;
     state.akurasi = pos.coords.accuracy;
-    document.getElementById('locStatus').style.display = 'none';
+    locEl.style.display = 'none';
     renderMap();
     document.getElementById('btnSubmitAbsen').disabled = false;
   }, err => {
-    document.getElementById('locStatus').innerHTML = '❌ Gagal mengambil lokasi: ' + err.message + '. Aktifkan GPS & izinkan akses lokasi, lalu coba lagi.';
-  }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+    locEl.innerHTML = '❌ Gagal mengambil lokasi: '+err.message+'. Aktifkan GPS & izinkan akses lokasi, lalu coba lagi.';
+  }, {enableHighAccuracy:true, timeout:15000, maximumAge:0});
 }
 
 function renderMap(){
@@ -472,7 +647,7 @@ function renderMap(){
   mapEl.style.display = 'block';
 
   if (!leafletMap){
-    leafletMap = L.map('map', { zoomControl:true, attributionControl:true });
+    leafletMap = L.map('map', {zoomControl:true, attributionControl:true});
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom:19, attribution:'&copy; OpenStreetMap'
     }).addTo(leafletMap);
@@ -480,52 +655,71 @@ function renderMap(){
   leafletMap.setView([state.lat, state.lng], 16);
 
   if (userMarker) leafletMap.removeLayer(userMarker);
-  userMarker = L.marker([state.lat, state.lng]).addTo(leafletMap).bindPopup('Posisi kamu sekarang');
+  userMarker = L.marker([state.lat, state.lng]).addTo(leafletMap)
+    .bindPopup('📍 Posisi kamu sekarang').openPopup();
 
   geofenceCircles.forEach(c => leafletMap.removeLayer(c));
   geofenceCircles = [];
 
-  let dalamRadius = false, jarakTerdekat = Infinity, namaTerdekat = '';
-  state.lokasiList.forEach(lok => {
-    const circle = L.circle([lok.lat, lok.lng], {
-      radius: lok.radius, color:'#4f8ef7', fillColor:'#4f8ef7', fillOpacity:0.12, weight:2
-    }).addTo(leafletMap).bindPopup(escapeHtml(lok.nama) + ' (radius ' + lok.radius + 'm)');
-    geofenceCircles.push(circle);
-    const jarak = hitungJarak(state.lat, state.lng, lok.lat, lok.lng);
-    if (jarak < jarakTerdekat){ jarakTerdekat = jarak; namaTerdekat = lok.nama; }
-    if (jarak <= lok.radius) dalamRadius = true;
-  });
+  // Jika pelanggan punya koordinat, tampilkan marker pelanggan & jarak
+  const pel = state.pelanggan;
+  if (pel && pel.lat && pel.lng){
+    const jarak = Math.round(hitungJarak(state.lat, state.lng, pel.lat, pel.lng));
+    const markerPel = L.marker([pel.lat, pel.lng], {
+      icon: L.divIcon({
+        html: `<div style="background:var(--accent2);color:#06231b;padding:4px 8px;border-radius:8px;font-size:12px;font-weight:700;white-space:nowrap;">🏢 ${escapeHtml(pel.nama)}</div>`,
+        className: '',
+        iconAnchor: [0, 0]
+      })
+    }).addTo(leafletMap).bindPopup(escapeHtml(pel.nama)+(pel.alamat?'<br>'+escapeHtml(pel.alamat):''));
+    geofenceCircles.push(markerPel);
+
+    // Garis lurus user ↔ pelanggan
+    const line = L.polyline([[state.lat,state.lng],[pel.lat,pel.lng]], {
+      color:'#4f8ef7', weight:2, dashArray:'6 4', opacity:0.7
+    }).addTo(leafletMap);
+    geofenceCircles.push(line);
+
+    // Fit bounds supaya keduanya terlihat
+    leafletMap.fitBounds([[state.lat,state.lng],[pel.lat,pel.lng]], {padding:[30,30]});
+
+    const badge = document.getElementById('radiusBadge');
+    badge.style.display = 'block';
+    badge.className = jarak <= 200 ? 'radius-badge ok' : 'radius-badge warn';
+    badge.textContent = jarak <= 200
+      ? `✅ Dalam jangkauan — ${jarak} m dari ${pel.nama}`
+      : `📍 ${jarak} m dari ${pel.nama}`;
+  } else {
+    // Pelanggan belum punya koordinat tersimpan
+    document.getElementById('radiusBadge').style.display = 'block';
+    document.getElementById('radiusBadge').className = 'radius-badge warn';
+    document.getElementById('radiusBadge').textContent = 'ℹ️ Koordinat pelanggan belum tersimpan. Lokasi GPS kamu tetap dicatat.';
+  }
 
   setTimeout(() => leafletMap.invalidateSize(), 150);
-
-  const badge = document.getElementById('radiusBadge');
-  badge.style.display = 'block';
-  if (state.lokasiList.length === 0){
-    badge.className = 'radius-badge warn';
-    badge.textContent = 'ℹ️ Lokasi referensi belum diatur admin.';
-  } else if (dalamRadius){
-    badge.className = 'radius-badge ok';
-    badge.textContent = `✅ Dalam radius (${Math.round(jarakTerdekat)} m dari ${namaTerdekat})`;
-  } else {
-    badge.className = 'radius-badge bad';
-    badge.textContent = `⚠️ Di luar radius — ${Math.round(jarakTerdekat)} m dari ${namaTerdekat}`;
-  }
 }
 
-// ── Submit absen ─────────────────────────────────────────────
+// ── Submit ───────────────────────────────────────────────────────
 document.getElementById('btnSubmitAbsen').addEventListener('click', async () => {
   const btn = document.getElementById('btnSubmitAbsen');
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div> Mengirim…';
   try {
-    const result = await postAction('submitAbsen', {
-      nama: state.nama, pin: state.pin, tipe: state.tipe,
-      lat: state.lat, lng: state.lng, akurasi: state.akurasi,
-      foto: state.fotoBase64, deviceInfo: navigator.userAgent
+    const result = await postAction('submitKunjungan', {
+      nama: state.nama,
+      pin: state.pin,
+      tipe: state.tipe,                    // "Check-in" / "Check-out"
+      pelangganId: state.pelanggan.id,
+      pelangganNama: state.pelanggan.nama,
+      lat: state.lat,
+      lng: state.lng,
+      akurasi: state.akurasi,
+      foto: state.fotoBase64,
+      deviceInfo: navigator.userAgent
     });
     if (result.ok) showResult(true, result); else showResult(false, result);
   } catch(err){
-    showResult(false, { msg: 'Tidak bisa terhubung ke server: ' + err.message });
+    showResult(false, {msg:'Tidak bisa terhubung ke server: '+err.message});
   }
   btn.disabled = false;
   btn.innerHTML = 'Kirim Absen Sekarang';
@@ -534,11 +728,19 @@ document.getElementById('btnSubmitAbsen').addEventListener('click', async () => 
 function showResult(success, result){
   const wrap = document.getElementById('resultWrap');
   if (success){
+    const tipeLabel = state.tipe === 'Check-in' ? '🟢 Check-in' : '🔴 Check-out';
+    const now = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     wrap.innerHTML = `
       <div class="result-icon">✅</div>
       <img class="result-thumb" src="${state.fotoBase64}" alt="Foto absen">
+      <div class="result-detail">
+        <div class="rd-row"><span class="rd-key">Sales</span><span class="rd-val">${escapeHtml(state.nama)}</span></div>
+        <div class="rd-row"><span class="rd-key">Pelanggan</span><span class="rd-val">${escapeHtml(state.pelanggan.nama)}</span></div>
+        <div class="rd-row"><span class="rd-key">Tipe</span><span class="rd-val">${tipeLabel}</span></div>
+        <div class="rd-row"><span class="rd-key">Pukul</span><span class="rd-val">${now}</span></div>
+      </div>
       <div class="result-msg">${escapeHtml(result.msg || 'Absen berhasil dicatat.')}</div>
-      <button class="btn btn-primary" onclick="resetFlow()">Selesai</button>
+      <button class="btn btn-primary" onclick="resetFlow()">Selesai / Kunjungan Berikutnya</button>
     `;
   } else {
     wrap.innerHTML = `
@@ -547,27 +749,35 @@ function showResult(success, result){
       <button class="btn btn-primary" onclick="retryFromError('${escapeHtml(result.msg||'')}')">Coba Lagi</button>
     `;
   }
-  showStep('step5');
+  showStep('step6');
 }
+
 function retryFromError(msg){
-  if (msg.indexOf('PIN') !== -1){
-    pinBoxes.forEach(b => b.value=''); pinBoxes[0].focus();
-    showStep('step1');
-  } else if (msg.indexOf('lokasi') !== -1 || msg.indexOf('radius') !== -1 || msg.indexOf('Lokasi') !== -1){
-    showStep('step4');
+  if (msg.indexOf('PIN')!==-1){
+    pinBoxes.forEach(b => b.value=''); pinBoxes[0].focus(); showStep('step1');
+  } else if (msg.indexOf('lokasi')!==-1||msg.indexOf('Lokasi')!==-1){
+    showStep('step5');
   } else {
-    showStep('step4');
+    showStep('step5');
   }
 }
+
 function resetFlow(){
   state.tipe=''; state.fotoBase64=''; state.lat=null; state.lng=null;
-  document.getElementById('btnTipeMasuk').classList.remove('selected');
-  document.getElementById('btnTipeKeluar').classList.remove('selected');
+  state.pelanggan=null;
+  document.getElementById('btnTipeMasuk').classList.remove('selected-masuk');
+  document.getElementById('btnTipeKeluar').classList.remove('selected-keluar');
+  document.getElementById('btnStep3Next').disabled = true;
   document.getElementById('btnStep2Next').disabled = true;
+  // Reset leaflet map
+  if (leafletMap){ leafletMap.remove(); leafletMap = null; userMarker = null; geofenceCircles = []; }
+  // Kembali ke step 2 (bisa langsung pilih pelanggan berikutnya, nama sudah tersimpan)
+  document.getElementById('pelSearch').value = '';
+  renderPelangganList('');
   showStep('step2');
 }
 
-// ── Mulai ──────────────────────────────────────────────────
+// ── Mulai ────────────────────────────────────────────────────────
 initPage();
 window.addEventListener('beforeunload', stopCamera);
 </script>
