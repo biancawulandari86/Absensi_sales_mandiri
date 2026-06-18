@@ -37,6 +37,7 @@
   .wrap{flex:1; display:flex; flex-direction:column; align-items:center; padding:22px 16px 8px;}
 
   .config-warn{
+    display:none;
     max-width:420px; width:100%; background:rgba(247,199,79,.12); border:1px solid rgba(247,199,79,.35);
     color:var(--gold); font-size:12.5px; padding:10px 14px; border-radius:10px; margin-bottom:16px; line-height:1.5;
   }
@@ -276,6 +277,18 @@ const state = {
 };
 let videoStream = null;
 let leafletMap = null, userMarker = null, geofenceCircles = [];
+
+// Fix path ikon marker Leaflet — file PNG ada langsung di folder leaflet/
+// (bukan di leaflet/images/ seperti default yang dicari Leaflet), makanya
+// perlu di-set manual di sini supaya tidak 404.
+if (typeof L !== 'undefined'){
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'leaflet/marker-icon-2x.png',
+    iconUrl: 'leaflet/marker-icon.png',
+    shadowUrl: 'leaflet/marker-shadow.png',
+  });
+}
 
 // ── Util ──────────────────────────────────────────────────
 function escapeHtml(s){
