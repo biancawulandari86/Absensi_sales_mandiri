@@ -5,10 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Absensi Sales</title>
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; }
@@ -55,25 +51,26 @@
     .search-box input { padding-left: 40px; }
     .search-box .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
 
-    .pelanggan-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+    .pelanggan-list { display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto; padding-right: 4px; }
+    .pelanggan-list::-webkit-scrollbar { width: 6px; }
+    .pelanggan-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     .pelanggan-item {
       border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px;
       cursor: pointer; transition: all .15s;
     }
     .pelanggan-item:hover { border-color: #0d9488; background: #f0fdfa; }
-    .pelanggan-item.selected { border-color: #0d9488; background: #ccfbf1; }
-    .pelanggan-item .nama { font-weight: 600; font-size: 14px; }
-    .pelanggan-item .meta { font-size: 12px; color: #64748b; margin-top: 2px; }
-    .pelanggan-item .badge {
-      display: inline-block; background: #e0f2fe; color: #0369a1;
-      padding: 2px 8px; border-radius: 999px; font-size: 11px; margin-top: 4px;
+    .pelanggan-item.selected { border-color: #0d9488; background: #ccfbf1; box-shadow: 0 0 0 2px rgba(13,148,136,0.2); }
+    .pelanggan-item .nama { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+    .pelanggan-item .meta { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.4; }
+    .pelanggan-item .meta-telepon {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #e0f2fe; color: #0369a1; padding: 2px 8px;
+      border-radius: 999px; font-size: 11px; margin-top: 6px;
     }
-
-    #pelangganMap {
-      height: 200px; border-radius: 10px; margin-top: 12px;
-      border: 1px solid #e2e8f0; display: none;
+    .pelanggan-item .sales-tag {
+      display: inline-block; background: #f1f5f9; color: #475569;
+      padding: 2px 8px; border-radius: 999px; font-size: 11px; margin-top: 4px; margin-left: 4px;
     }
-    #pelangganMap.show { display: block; }
 
     .btn {
       width: 100%; padding: 14px; border: none; border-radius: 10px;
@@ -93,11 +90,11 @@
     }
     .summary-card .row {
       display: flex; justify-content: space-between; padding: 6px 0;
-      font-size: 14px; border-bottom: 1px dashed #e2e8f0;
+      font-size: 14px; border-bottom: 1px dashed #e2e8f0; gap: 12px;
     }
     .summary-card .row:last-child { border-bottom: none; }
-    .summary-card .row .k { color: #64748b; }
-    .summary-card .row .v { font-weight: 600; color: #0f172a; }
+    .summary-card .row .k { color: #64748b; flex-shrink: 0; }
+    .summary-card .row .v { font-weight: 600; color: #0f172a; text-align: right; word-break: break-word; }
 
     .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .status-opt {
@@ -110,12 +107,18 @@
     .status-opt .lbl { font-size: 13px; font-weight: 600; margin-top: 4px; }
 
     .geo-info {
-      font-size: 12px; color: #64748b; padding: 8px 10px;
-      background: #f0fdfa; border-radius: 8px; margin-top: 8px;
-      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: #64748b; padding: 12px 14px;
+      border-radius: 8px; margin-top: 8px;
+      display: flex; align-items: flex-start; gap: 8px; line-height: 1.5;
     }
-    .geo-info.ok { background: #f0fdfa; color: #0f766e; }
-    .geo-info.err { background: #fef2f2; color: #b91c1c; }
+    .geo-info.ok { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+    .geo-info.err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .geo-info.loading { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .geo-info .retry-btn {
+      display: inline-block; margin-top: 6px;
+      background: #0d9488; color: #fff; padding: 6px 12px;
+      border-radius: 6px; font-size: 12px; border: none; cursor: pointer;
+    }
 
     .toast {
       position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
@@ -133,6 +136,11 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .footer-info { text-align: center; font-size: 11px; color: #94a3b8; padding: 12px 0; }
+
+    .warning-box {
+      background: #fef3c7; border-left: 3px solid #f59e0b; padding: 10px 12px;
+      border-radius: 6px; margin-bottom: 12px; font-size: 12px; color: #92400e;
+    }
   </style>
 </head>
 <body>
@@ -155,7 +163,7 @@
           </select>
         </div>
         <div class="field">
-          <label class="label">Tanggal</label>
+          <label class="label">Tanggal Kunjungan</label>
           <input type="date" class="input" id="absenDate">
         </div>
         <button class="btn btn-primary" id="nextStep1" disabled>Lanjut →</button>
@@ -163,12 +171,14 @@
 
       <!-- STEP 2: PILIH PELANGGAN -->
       <div class="step" id="step2">
+        <div class="warning-box" id="filterInfo" style="display:none;">
+          📋 Menampilkan pelanggan yang ditugaskan ke sales ini.
+        </div>
         <div class="search-box">
           <span class="icon">🔍</span>
           <input type="text" class="input" id="searchPelanggan" placeholder="Cari nama pelanggan…">
         </div>
         <div class="pelanggan-list" id="pelangganList"></div>
-        <div id="pelangganMap"></div>
         <div class="actions">
           <button class="btn btn-secondary" data-back="1">← Kembali</button>
           <button class="btn btn-primary" id="nextStep2" disabled>Lanjut →</button>
@@ -193,7 +203,9 @@
           <label class="label">Catatan (opsional)</label>
           <textarea class="textarea" id="catatan" placeholder="Catatan kunjungan…"></textarea>
         </div>
-        <div class="geo-info" id="geoInfo">📍 Mendapatkan lokasi Anda…</div>
+        <div class="geo-info loading" id="geoInfo">
+          <span>📍 Mendapatkan lokasi Anda…</span>
+        </div>
         <div class="actions">
           <button class="btn btn-secondary" data-back="2">← Kembali</button>
           <button class="btn btn-primary" id="submitBtn" disabled>Kirim Absen</button>
@@ -208,10 +220,6 @@
 
   <div class="toast" id="toast"></div>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
   <script>
     // ===== STATE =====
     const state = {
@@ -221,14 +229,13 @@
       salesNama: '',
       pelangganId: '',
       pelangganNama: '',
-      pelangganLat: null,
-      pelangganLng: null,
+      pelangganAlamat: '',
+      pelangganTelepon: '',
       status: 'Hadir',
       userLat: null,
       userLng: null,
       geoOk: false,
-      map: null,
-      markers: []
+      geoWatchId: null
     };
 
     // ===== TOAST =====
@@ -242,16 +249,6 @@
 
     // ===== HELPERS =====
     function $(id) { return document.getElementById(id); }
-    function haversine(lat1, lng1, lat2, lng2) {
-      const R = 6371000;
-      const toRad = x => x * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLng = toRad(lng2 - lng1);
-      const a = Math.sin(dLat/2)**2 +
-                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-                Math.sin(dLng/2)**2;
-      return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-    }
     function fmtDate(d) {
       const y = d.getFullYear();
       const m = String(d.getMonth()+1).padStart(2,'0');
@@ -272,7 +269,6 @@
       $('stepTitle').textContent = titles[n][0];
       $('stepDesc').textContent = titles[n][1];
       $('progressFill').style.width = (n * 33.33) + '%';
-      if (n === 2) setTimeout(initPelangganMap, 200);
       if (n === 3) initStep3();
     }
 
@@ -280,7 +276,7 @@
     function initPage() {
       google.script.run.withSuccessHandler(function(data) {
         state.init = data;
-        // Isi dropdown sales
+        // Isi dropdown sales (sekarang format: { id, nama, area })
         const sel = $('salesSelect');
         (data.sales || []).forEach(s => {
           const opt = document.createElement('option');
@@ -288,8 +284,9 @@
           opt.textContent = s.nama + (s.area ? ' — ' + s.area : '');
           sel.appendChild(opt);
         });
-        // Tanggal default hari ini
-        $('absenDate').value = fmtDate(new Date(data.serverTime || new Date()));
+        // Tanggal default hari ini (dari server time)
+        const today = data.serverTime ? new Date(data.serverTime) : new Date();
+        $('absenDate').value = fmtDate(today);
         $('loaderInit').style.display = 'none';
         goToStep(1);
       }).withFailureHandler(function(err) {
@@ -301,7 +298,8 @@
     // ===== STEP 1 → STEP 2 =====
     $('salesSelect').addEventListener('change', e => {
       state.salesId = e.target.value;
-      state.salesNama = e.target.options[e.target.selectedIndex].text.split(' — ')[0];
+      const selOpt = e.target.options[e.target.selectedIndex];
+      state.salesNama = selOpt ? selOpt.textContent.split(' — ')[0] : '';
       $('nextStep1').disabled = !state.salesId;
     });
     $('nextStep1').addEventListener('click', () => {
@@ -313,28 +311,59 @@
     // ===== STEP 2: RENDER PELANGGAN LIST =====
     function renderPelangganList() {
       const list = $('pelangganList');
-      list.innerHTML = '';
-      const pelanggan = (state.init.pelanggan || []).filter(p => p.status !== 'Non-Aktif');
-      if (pelanggan.length === 0) {
-        list.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px;">Tidak ada pelanggan</p>';
-        return;
-      }
-      pelanggan.forEach(p => {
-        const div = document.createElement('div');
-        div.className = 'pelanggan-item';
-        div.dataset.id = p.id;
-        div.dataset.nama = p.nama;
-        div.dataset.lat = p.lat || '';
-        div.dataset.lng = p.lng || '';
-        div.innerHTML = `
-          <div class="nama">🏢 ${p.nama}</div>
-          <div class="meta">${p.alamat || ''} ${p.kota ? '• ' + p.kota : ''}</div>
-          ${p.kategori ? '<span class="badge">' + p.kategori + '</span>' : ''}
-          ${p.lat ? '<span class="badge" style="background:#dcfce7;color:#15803d;">📍 Punya koordinat</span>' : ''}
-        `;
-        div.addEventListener('click', () => selectPelanggan(div, p));
-        list.appendChild(div);
-      });
+      list.innerHTML = '<div class="loader" style="margin:20px auto;"></div>';
+
+      // Coba ambil pelanggan yang ditugaskan ke sales ini
+      google.script.run.withSuccessHandler(function(res) {
+        list.innerHTML = '';
+        let pelanggan = [];
+
+        if (res && res.ok && res.data && res.data.length > 0) {
+          // Berhasil filter per sales
+          pelanggan = res.data;
+          if (res.filtered) {
+            $('filterInfo').style.display = 'block';
+            $('filterInfo').innerHTML = '📋 Menampilkan ' + pelanggan.length + ' pelanggan yang ditugaskan ke <b>' + state.salesNama + '</b>.';
+          } else {
+            $('filterInfo').style.display = 'block';
+            $('filterInfo').innerHTML = '📋 Data pelanggan tidak punya kolom Sales — menampilkan semua (' + pelanggan.length + ').';
+          }
+        } else {
+          // Fallback: pakai semua pelanggan dari state.init
+          pelanggan = (state.init.pelanggan || []);
+          $('filterInfo').style.display = pelanggan.length > 0 ? 'none' : 'block';
+          if (pelanggan.length === 0) {
+            $('filterInfo').innerHTML = '⚠️ Belum ada data pelanggan. Minta admin jalankan <code>fetchDataPelanggan()</code> di Apps Script.';
+          }
+        }
+
+        if (pelanggan.length === 0) {
+          list.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px;">Tidak ada pelanggan untuk sales ini.</p>';
+          return;
+        }
+
+        pelanggan.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'pelanggan-item';
+          div.dataset.id = p.id;
+          div.dataset.nama = p.nama;
+          div.innerHTML = `
+            <div class="nama">🏢 ${escapeHtml(p.nama)}</div>
+            <div class="meta">${p.alamat ? '📍 ' + escapeHtml(p.alamat) : '<em style="color:#cbd5e1;">Tanpa alamat</em>'}</div>
+            ${p.telepon ? '<div class="meta-telepon">📞 ' + escapeHtml(p.telepon) + '</div>' : ''}
+            ${p.sales ? '<span class="sales-tag">Sales: ' + escapeHtml(p.sales) + '</span>' : ''}
+          `;
+          div.addEventListener('click', () => selectPelanggan(div, p));
+          list.appendChild(div);
+        });
+      }).withFailureHandler(function(err) {
+        list.innerHTML = '<p style="text-align:center;color:#b91c1c;padding:20px;">Gagal load pelanggan: ' + err.message + '</p>';
+      }).getPelangganBySales(state.salesNama);
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
     }
 
     function selectPelanggan(el, p) {
@@ -342,51 +371,11 @@
       el.classList.add('selected');
       state.pelangganId = p.id;
       state.pelangganNama = p.nama;
-      state.pelangganLat = p.lat;
-      state.pelangganLng = p.lng;
+      state.pelangganAlamat = p.alamat || '';
+      state.pelangganTelepon = p.telepon || '';
       $('nextStep2').disabled = false;
-      // Fokus peta ke pelanggan
-      if (p.lat && p.lng && state.map) {
-        state.map.setView([p.lat, p.lng], 15);
-      }
-    }
-
-    // ===== STEP 2: PELANGGAN MAP (LEAFLET) =====
-    function initPelangganMap() {
-      const withCoords = (state.init.pelanggan || []).filter(p => p.lat && p.lng);
-      if (withCoords.length === 0) {
-        $('pelangganMap').classList.remove('show');
-        return;
-      }
-      $('pelangganMap').classList.add('show');
-
-      // Inisialisasi peta kalau belum
-      if (!state.map) {
-        state.map = L.map('pelangganMap').setView([-2.5, 118], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap',
-          maxZoom: 19
-        }).addTo(state.map);
-      } else {
-        state.map.invalidateSize();
-      }
-
-      // Hapus marker lama
-      state.markers.forEach(m => state.map.removeLayer(m));
-      state.markers = [];
-
-      // Tambah marker semua pelanggan
-      withCoords.forEach(p => {
-        const m = L.marker([p.lat, p.lng]).addTo(state.map)
-          .bindPopup('<b>' + p.nama + '</b><br>' + (p.alamat || '') + '<br>' + (p.kategori || ''));
-        state.markers.push(m);
-      });
-
-      // Fit bounds ke semua marker
-      if (withCoords.length > 0) {
-        const group = L.featureGroup(state.markers);
-        state.map.fitBounds(group.getBounds().pad(0.2));
-      }
+      // Scroll selected ke view
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     // ===== SEARCH PELANGGAN =====
@@ -414,15 +403,14 @@
       // Render summary
       const sc = $('summaryCard');
       const date = $('absenDate').value;
-      const p = (state.init.pelanggan || []).find(x => x.id === state.pelangganId);
       sc.innerHTML = `
-        <div class="row"><span class="k">Sales</span><span class="v">${state.salesNama}</span></div>
+        <div class="row"><span class="k">Sales</span><span class="v">${escapeHtml(state.salesNama)}</span></div>
         <div class="row"><span class="k">Tanggal</span><span class="v">${date}</span></div>
-        <div class="row"><span class="k">Pelanggan</span><span class="v">${state.pelangganNama}</span></div>
-        ${p && p.alamat ? '<div class="row"><span class="k">Alamat</span><span class="v" style="text-align:right;max-width:60%;">' + p.alamat + '</span></div>' : ''}
-        ${p && p.kota ? '<div class="row"><span class="k">Kota</span><span class="v">' + p.kota + '</span></div>' : ''}
+        <div class="row"><span class="k">Pelanggan</span><span class="v">${escapeHtml(state.pelangganNama)}</span></div>
+        ${state.pelangganAlamat ? '<div class="row"><span class="k">Alamat</span><span class="v">' + escapeHtml(state.pelangganAlamat) + '</span></div>' : ''}
+        ${state.pelangganTelepon ? '<div class="row"><span class="k">No Telepon</span><span class="v">' + escapeHtml(state.pelangganTelepon) + '</span></div>' : ''}
       `;
-      // Get user location
+      // Get user location (MANDATORY)
       getUserLocation();
     }
 
@@ -435,64 +423,70 @@
       });
     });
 
-    // ===== GEOLOCATION =====
+    // ===== GEOLOCATION (MANDATORY) =====
     function getUserLocation() {
       const info = $('geoInfo');
-      info.className = 'geo-info';
-      info.textContent = '📍 Mendapatkan lokasi Anda…';
+      info.className = 'geo-info loading';
+      info.innerHTML = '<span>📍 Mendapatkan lokasi Anda… Pastikan GPS aktif & izinkan akses lokasi.</span>';
       $('submitBtn').disabled = true;
+      state.geoOk = false;
+      state.userLat = null;
+      state.userLng = null;
 
       if (!navigator.geolocation) {
-        info.className = 'geo-info err';
-        info.textContent = '❌ Browser tidak mendukung geolocation';
+        showGeoError('Browser tidak mendukung geolocation. Gunakan browser modern (Chrome/Safari).');
         return;
       }
+
       navigator.geolocation.getCurrentPosition(
         pos => {
           state.userLat = pos.coords.latitude;
           state.userLng = pos.coords.longitude;
           state.geoOk = true;
-          let jarakStr = '';
-          if (state.pelangganLat && state.pelangganLng) {
-            const jarak = haversine(state.userLat, state.userLng,
-                                    state.pelangganLat, state.pelangganLng);
-            jarakStr = ' • Jarak ke pelanggan: ' + jarak + ' m';
-          }
           info.className = 'geo-info ok';
-          info.textContent = '✅ Lokasi: ' + state.userLat.toFixed(5) + ', ' +
-                             state.userLng.toFixed(5) + jarakStr;
+          info.innerHTML = '<span>✅ Lokasi tercatat: <b>' + state.userLat.toFixed(5) + ', ' + state.userLng.toFixed(5) + '</b><br>Akurasi: ±' + Math.round(pos.coords.accuracy || 0) + ' m<br><a href="https://maps.google.com/?q=' + state.userLat + ',' + state.userLng + '" target="_blank" style="color:#0f766e;text-decoration:underline;">Lihat di Maps ↗</a></span>';
           $('submitBtn').disabled = false;
         },
         err => {
-          info.className = 'geo-info err';
-          info.textContent = '❌ Gagal: ' + (err.message || 'Tidak dapat lokasi');
-          // Tetap allow submit tapi tanpa koordinat
-          $('submitBtn').disabled = false;
+          let msg = '❌ Gagal mendapatkan lokasi: ';
+          if (err.code === 1) msg += 'Akses lokasi DITOLAK. Anda WAJIB mengizinkan akses lokasi untuk absen.';
+          else if (err.code === 2) msg += 'Posisi tidak tersedia. Aktifkan GPS / Wi-Fi / data seluler lalu coba lagi.';
+          else if (err.code === 3) msg += 'Timeout. Pastikan sinyal GPS cukup kuat lalu coba lagi.';
+          else msg += (err.message || 'Tidak dapat lokasi');
+          showGeoError(msg);
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
       );
+    }
+
+    function showGeoError(msg) {
+      const info = $('geoInfo');
+      info.className = 'geo-info err';
+      info.innerHTML = '<div><span>' + msg + '</span><br><button class="retry-btn" id="retryGeo">🔄 Coba lagi</button></div>';
+      $('submitBtn').disabled = true;  // ★ MANDATORY: gak bisa submit tanpa lokasi
+      $('retryGeo').addEventListener('click', getUserLocation);
     }
 
     // ===== SUBMIT =====
     $('submitBtn').addEventListener('click', () => {
+      // Double-check geo
+      if (!state.geoOk || !state.userLat || !state.userLng) {
+        toast('📍 Aktifkan lokasi dulu untuk absen!', 3500);
+        getUserLocation();
+        return;
+      }
+
       const btn = $('submitBtn');
       btn.disabled = true;
       btn.textContent = 'Mengirim…';
-
-      let jarak = 0;
-      if (state.userLat && state.pelangganLat && state.pelangganLng) {
-        jarak = haversine(state.userLat, state.userLng,
-                          state.pelangganLat, state.pelangganLng);
-      }
 
       const payload = {
         salesId: state.salesId,
         salesNama: state.salesNama,
         pelangganId: state.pelangganId,
         pelangganNama: state.pelangganNama,
-        latSales: state.userLat || '',
-        lngSales: state.userLng || '',
-        jarak: jarak,
+        latSales: state.userLat,
+        lngSales: state.userLng,
         status: state.status,
         catatan: $('catatan').value
       };
@@ -500,9 +494,9 @@
       google.script.run.withSuccessHandler(res => {
         if (res.success) {
           toast('✅ ' + res.message, 3000);
-          setTimeout(() => location.reload(), 1500);
+          setTimeout(() => location.reload(), 1800);
         } else {
-          toast('❌ ' + res.message, 3500);
+          toast('❌ ' + res.message, 4500);
           btn.disabled = false;
           btn.textContent = 'Kirim Absen';
         }
